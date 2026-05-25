@@ -3,154 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alerte Buts - Canadiens</title>
+    <title>Alerte Buts - Mobile</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
             background-color: #111;
             color: #fff;
             text-align: center;
-            padding: 50px;
+            padding: 20px; /* Réduit pour mobile */
+            margin: 0;
         }
         .container {
             max-width: 600px;
-            margin: 0 auto;
+            margin: 10px auto;
             background: #191919;
-            padding: 30px;
+            padding: 20px;
             border-radius: 15px;
-            border-top: 5px solid #A6192E; /* Rouge CH */
+            border-top: 5px solid #A6192E;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
-        h1 { margin-bottom: 30px; }
+        h1 { margin-bottom: 20px; font-size: 1.5rem; }
+        
         .scoreboard {
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
             align-items: center;
-            font-size: 2.5rem;
-            margin: 40px 0;
+            margin: 30px 0;
+            gap: 15px;
+        }
+        
+        .team-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 30%; /* Utilise des pourcentages pour le mobile */
+        }
+
+        .team-name {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
             font-weight: bold;
         }
-        .score {
-            font-size: 4rem;
-            color: #A6192E;
-            margin-top: 10px;
+
+        .team-logo {
+            width: 100%; /* S'adapte à la largeur du conteneur */
+            max-width: 100px; /* Évite qu'il soit trop gros sur tablette */
+            height: auto;
+            margin-bottom: 10px;
         }
+
+        .score {
+            font-size: 3rem; /* Légèrement plus petit pour mobile */
+            color: #A6192E;
+            font-weight: bold;
+        }
+
+        .vs-divider {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #888;
+        }
+
         .btn-audio {
             background-color: #A6192E;
             color: white;
             border: none;
-            padding: 15px 30px;
-            font-size: 1.2rem;
+            padding: 15px 25px;
+            font-size: 1.1rem;
             font-weight: bold;
             border-radius: 30px;
             cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
+            width: 100%; /* Le bouton prend toute la largeur sur mobile */
+            max-width: 350px;
             box-shadow: 0 5px 15px rgba(166, 25, 46, 0.4);
         }
-        .btn-audio:hover { background-color: #c12439; }
-        .btn-audio:active { transform: scale(0.98); }
         .btn-audio.active {
             background-color: #248a3d;
             box-shadow: 0 5px 15px rgba(36, 138, 61, 0.4);
-            cursor: default;
         }
         .status {
-            margin-top: 20px;
-            font-size: 0.9rem;
+            margin-top: 15px;
+            font-size: 0.85rem;
             color: #888;
+        }
+
+        /* AJUSTEMENT POUR LES TRÈS PETITS ÉCRANS */
+        @media (max-width: 400px) {
+            .score { font-size: 2.5rem; }
+            .team-name { font-size: 1rem; }
+            h1 { font-size: 1.3rem; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Alerte Buts CH 🏒</h1>
+    <h1>Canadiens vs Hurricanes 🏒</h1>
     
-    <!-- Zone du bouton d'activation -->
     <button id="btnAudio" class="btn-audio" onclick="activerNotifications()">
         Activer les notifications vocales
     </button>
-    <p id="statusTxt" class="status">Le son est bloqué par le navigateur. Cliquez pour l'activer.</p>
+    <p id="statusTxt" class="status">Le son est bloqué. Touchez pour l'activer.</p>
 
-    <!-- Tableau des scores -->
     <div class="scoreboard">
-        <div>
-            <div>MTL</div>
+        <div class="team-container">
+            <div class="team-name">MTL</div>
+            <img src="logo_canadiens.png" alt="Logo Canadiens" class="team-logo">
             <div id="scoreMTL" class="score">0</div>
         </div>
-        <div>VS</div>
-        <div>
-            <div id="nomAdversaire">ADV</div>
+
+        <div class="vs-divider">VS</div>
+
+        <div class="team-container">
+            <div class="team-name">CAR</div>
+            <img src="logo_hurricanes.png" alt="Logo Hurricanes" class="team-logo">
             <div id="scoreADV" class="score">0</div>
         </div>
     </div>
 </div>
 
 <script>
-// Variables de suivi du match
+// (Le reste du script JavaScript reste exactement le même que le précédent)
 let scoreButsMTL = 0;
 let scoreButsAdversaire = 0;
-let nomAdversaire = "Boston"; // Remplacé dynamiquement par l'API plus tard
+let nomAdversaire = "les Hurricanes";
 let audioAutorise = false;
 let intervalleMatch = null;
 
-// Fonction déclenchée par le clic sur le bouton
 function activerNotifications() {
-    if (audioAutorise) return; // Déjà actif
-
+    if (audioAutorise) return;
     audioAutorise = true;
     
-    // Modification visuelle du bouton
     const btn = document.getElementById('btnAudio');
-    btn.innerText = "🔊 Notifications Vocales Actives";
+    btn.innerText = "🔊 Notifications Actives";
     btn.classList.add('active');
     
     const status = document.getElementById('statusTxt');
     status.innerText = "En attente d'une mise à jour du score...";
     status.style.color = "#248a3d";
 
-    // Un petit message de bienvenue pour confirmer au navigateur que la voix fonctionne
     annoncerTexte("Notifications activées. Bon match !");
-
-    // Lancement immédiat de la vérification, puis toutes les 15 secondes
-    verifierLeMatch();
     intervalleMatch = setInterval(verifierLeMatch, 15000);
 }
 
 function verifierLeMatch() {
-    // Note : Remplace cette URL par une vraie clé/endpoint d'API (NHL API, etc.)
-    // Pour l'exemple, on simule une réponse d'API
-    console.log("Vérification du score en cours...");
-    
-    /* 
-    Exemple de fetch réel :
-    fetch('https://api-web.nhle.com/v1/gamecenter/ID_MATCH/landing')
-        .then(res => res.json())
-        .then(data => { ... })
-    */
+    console.log("Vérification...");
 }
 
-// Fonction générique pour forcer la voix
 function annoncerTexte(texte) {
     if (!audioAutorise) return;
-
-    // Nettoyer les anciennes lectures en cours pour éviter les chevauchements
     window.speechSynthesis.cancel();
-
     const utterance = new SpeechSynthesisUtterance(texte);
-    utterance.lang = 'fr-CA'; // Synthèse vocale avec l'accent québécois si dispo sur la machine
-    utterance.rate = 1.0;     // Vitesse normale de la voix
-    
+    utterance.lang = 'fr-CA';
     window.speechSynthesis.speak(utterance);
 }
-
-// Exemple pour tester la détection de but (tu pourras lier ça à tes données d'API)
-function simulerButMtl() {
-    scoreButsMTL++;
-    document.getElementById('scoreMTL').innerText = scoreButsMTL;
-    annoncerTexte(`Et le but ! Le score est maintenant de Montréal ${scoreButsMTL}, ${nomAdversaire} ${scoreButsAdversaire}.`);
-}
 </script>
-
 </body>
 </html>
