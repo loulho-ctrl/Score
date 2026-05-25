@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerte Buts - Canadiens</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #111;
+            color: #fff;
+            text-align: center;
+            padding: 50px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #191919;
+            padding: 30px;
+            border-radius: 15px;
+            border-top: 5px solid #A6192E; /* Rouge CH */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        h1 { margin-bottom: 30px; }
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-size: 2.5rem;
+            margin: 40px 0;
+            font-weight: bold;
+        }
+        .score {
+            font-size: 4rem;
+            color: #A6192E;
+            margin-top: 10px;
+        }
+        .btn-audio {
+            background-color: #A6192E;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 5px 15px rgba(166, 25, 46, 0.4);
+        }
+        .btn-audio:hover { background-color: #c12439; }
+        .btn-audio:active { transform: scale(0.98); }
+        .btn-audio.active {
+            background-color: #248a3d;
+            box-shadow: 0 5px 15px rgba(36, 138, 61, 0.4);
+            cursor: default;
+        }
+        .status {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Alerte Buts CH 🏒</h1>
+    
+    <!-- Zone du bouton d'activation -->
+    <button id="btnAudio" class="btn-audio" onclick="activerNotifications()">
+        Activer les notifications vocales
+    </button>
+    <p id="statusTxt" class="status">Le son est bloqué par le navigateur. Cliquez pour l'activer.</p>
+
+    <!-- Tableau des scores -->
+    <div class="scoreboard">
+        <div>
+            <div>MTL</div>
+            <div id="scoreMTL" class="score">0</div>
+        </div>
+        <div>VS</div>
+        <div>
+            <div id="nomAdversaire">ADV</div>
+            <div id="scoreADV" class="score">0</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables de suivi du match
+let scoreButsMTL = 0;
+let scoreButsAdversaire = 0;
+let nomAdversaire = "Boston"; // Remplacé dynamiquement par l'API plus tard
+let audioAutorise = false;
+let intervalleMatch = null;
+
+// Fonction déclenchée par le clic sur le bouton
+function activerNotifications() {
+    if (audioAutorise) return; // Déjà actif
+
+    audioAutorise = true;
+    
+    // Modification visuelle du bouton
+    const btn = document.getElementById('btnAudio');
+    btn.innerText = "🔊 Notifications Vocales Actives";
+    btn.classList.add('active');
+    
+    const status = document.getElementById('statusTxt');
+    status.innerText = "En attente d'une mise à jour du score...";
+    status.style.color = "#248a3d";
+
+    // Un petit message de bienvenue pour confirmer au navigateur que la voix fonctionne
+    annoncerTexte("Notifications activées. Bon match !");
+
+    // Lancement immédiat de la vérification, puis toutes les 15 secondes
+    verifierLeMatch();
+    intervalleMatch = setInterval(verifierLeMatch, 15000);
+}
+
+function verifierLeMatch() {
+    // Note : Remplace cette URL par une vraie clé/endpoint d'API (NHL API, etc.)
+    // Pour l'exemple, on simule une réponse d'API
+    console.log("Vérification du score en cours...");
+    
+    /* 
+    Exemple de fetch réel :
+    fetch('https://api-web.nhle.com/v1/gamecenter/ID_MATCH/landing')
+        .then(res => res.json())
+        .then(data => { ... })
+    */
+}
+
+// Fonction générique pour forcer la voix
+function annoncerTexte(texte) {
+    if (!audioAutorise) return;
+
+    // Nettoyer les anciennes lectures en cours pour éviter les chevauchements
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(texte);
+    utterance.lang = 'fr-CA'; // Synthèse vocale avec l'accent québécois si dispo sur la machine
+    utterance.rate = 1.0;     // Vitesse normale de la voix
+    
+    window.speechSynthesis.speak(utterance);
+}
+
+// Exemple pour tester la détection de but (tu pourras lier ça à tes données d'API)
+function simulerButMtl() {
+    scoreButsMTL++;
+    document.getElementById('scoreMTL').innerText = scoreButsMTL;
+    annoncerTexte(`Et le but ! Le score est maintenant de Montréal ${scoreButsMTL}, ${nomAdversaire} ${scoreButsAdversaire}.`);
+}
+</script>
+
+</body>
+</html>
