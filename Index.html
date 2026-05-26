@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerte Buts - CH vs Hurricanes</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #111;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 10px auto;
+            background: #191919;
+            padding: 20px;
+            border-radius: 15px;
+            border-top: 5px solid #A6192E; /* Rouge CH */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        h1 { margin-bottom: 20px; font-size: 1.5rem; }
+        
+        .scoreboard {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            gap: 15px;
+        }
+        
+        .team-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 35%;
+        }
+
+        .team-name {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .team-logo {
+            width: 100%;
+            max-width: 100px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        .score {
+            font-size: 3rem;
+            color: #A6192E;
+            font-weight: bold;
+        }
+
+        .vs-divider {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #888;
+        }
+
+        .btn-audio {
+            background-color: #A6192E;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 350px;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 5px 15px rgba(166, 25, 46, 0.4);
+        }
+        .btn-audio:hover { background-color: #c12439; }
+        .btn-audio:active { transform: scale(0.98); }
+        .btn-audio.active {
+            background-color: #248a3d;
+            box-shadow: 0 5px 15px rgba(36, 138, 61, 0.4);
+            cursor: default;
+        }
+        .status {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        /* Mode de test en bas de page */
+        .test-zone {
+            margin-top: 30px; 
+            border-top: 1px dashed #444; 
+            padding-top: 20px;
+        }
+        .btn-test {
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            margin: 5px; 
+            border-radius: 5px; 
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @media (max-width: 400px) {
+            .score { font-size: 2.5rem; }
+            .team-name { font-size: 1rem; }
+            h1 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Canadiens vs Hurricanes 🏒</h1>
+    
+    <button id="btnAudio" class="btn-audio" onclick="activerNotifications()">
+        Activer les notifications vocales
+    </button>
+    <p id="statusTxt" class="status">Le son est bloqué. Touchez/Cliquez pour l'activer.</p>
+
+    <div class="scoreboard">
+        <div class="team-container">
+            <div class="team-name">MTL</div>
+            <img src="logo_canadiens.png" alt="Logo Canadiens" class="team-logo">
+            <div id="scoreMTL" class="score">0</div>
+        </div>
+
+        <div class="vs-divider">VS</div>
+
+        <div class="team-container">
+            <div id="nomAdversaireHTML" class="team-name">CAR</div>
+            <img src="logo_hurricanes.png" alt="Logo Hurricanes" class="team-logo">
+            <div id="scoreADV" class="score">0</div>
+        </div>
+    </div>
+
+    <div class="test-zone">
+        <p style="color: #888; font-size: 0.8rem;">Zone de Test manuelle :</p>
+        <button class="btn-test" style="background: #248a3d;" onclick="simulerButMtl()">+1 MTL 🚨</button>
+        <button class="btn-test" style="background: #a6192e;" onclick="simulerButAdv()">+1 CAR 🚨</button>
+    </div>
+</div>
+
+<script>
+// Variables de suivi du match
+let scoreButsMTL = 0;
+let scoreButsAdversaire = 0;
+let nomAdversaire = "les Hurricanes";
+let audioAutorise = false;
+let intervalleMatch = null;
+
+// ID du match de ce soir (Série de playoffs NHL API)
+const ID_MATCH = "2025030315"; 
+
+function activerNotifications() {
+    if (audioAutorise) return; // Évite les doubles clics
+    audioAutorise = true;
+    
+    // Changement visuel du bouton principal
+    const btn = document.getElementById('btnAudio');
+    btn.innerText = "🔊 Notifications Actives";
+    btn.classList.add('active');
+    
+    const status = document.getElementById('statusTxt');
+    status.innerText = "Connexion en direct à la NHL...";
+    status.style.color = "#248a3d";
+
+    // Débloque l'audio immédiatement avec un message d'accueil
+    annoncerTexte("Notifications activées. Connexion au match en cours.");
+
+    // Lancer la première requête de score tout de suite, puis en boucle
+    verifierLeMatch();
+    intervalleMatch = setInterval(verifierLeMatch, 15000); // Toutes les 15 secondes
+}
+
+function verifierLeMatch() {
+    console.log("Vérification automatique du score réel...");
+    
+    fetch(`https://api-web.nhle.com/v1/gamecenter/${ID_MATCH}/landing`)
+        .then(res => {
+            if (!res.ok) throw new Error("Erreur de réseau");
+            return res.json();
+        })
+        .then(data => {
+            // Déterminer la position du CH (à domicile ou à l'extérieur)
+            const estAdomicile = (data.homeTeam.abbrev === "MTL");
+            
+            const nouveauxButsMTL = estAdomicile ? data.homeTeam.score : data.awayTeam.score;
+            const nouveauxButsADV = estAdomicile ? data.awayTeam.score : data.homeTeam.score;
+            
+            // Ajuster dynamiquement l'abréviation de l'adversaire au besoin
+            document.getElementById('nomAdversaireHTML').innerText = estAdomicile ? data.awayTeam.abbrev : data.homeTeam.abbrev;
+
+            // CAS 1 : Premier chargement de la page -> On synchronise le score actuel en silence
+            const estPremierChargement = (scoreButsMTL === 0 && scoreButsAdversaire === 0 && document.getElementById('scoreMTL').innerText === "0");
+
+            if (estPremierChargement) {
+                scoreButsMTL = nouveauxButsMTL;
+                scoreButsAdversaire = nouveauxButsADV;
+                document.getElementById('scoreMTL').innerText = scoreButsMTL;
+                document.getElementById('scoreADV').innerText = scoreButsAdversaire;
+                document.getElementById('statusTxt').innerText = "Score synchronisé en direct !";
+                return; 
+            }
+
+            // CAS 2 : Détection d'un nouveau BUT des Canadiens
+            if (nouveauxButsMTL > scoreButsMTL) {
+                scoreButsMTL = nouveauxButsMTL;
+                document.getElementById('scoreMTL').innerText = scoreButsMTL;
+                annoncerTexte(`Et le but ! Le score est maintenant de Montréal ${scoreButsMTL}, ${nomAdversaire} ${scoreButsAdversaire}.`);
+            }
+            
+            // CAS 3 : Détection d'un nouveau BUT des Hurricanes
+            if (nouveauxButsADV > scoreButsAdversaire) {
+                scoreButsAdversaire = nouveauxButsADV;
+                document.getElementById('scoreADV').innerText = scoreButsAdversaire;
+                annoncerTexte(`But pour la Caroline. Le score est maintenant de Montréal ${scoreButsMTL}, ${nomAdversaire} ${scoreButsAdversaire}.`);
+            }
+        })
+        .catch(err => {
+            console.error("Erreur de récupération :", err);
+            document.getElementById('statusTxt').innerText = "Erreur de mise à jour du score.";
+            document.getElementById('statusTxt').style.color = "#a6192e";
+        });
+}
+
+// Moteur de synthèse vocale
+function annoncerTexte(texte) {
+    if (!audioAutorise) return;
+    
+    window.speechSynthesis.cancel(); // Coupe la parole si une autre phrase est en cours
+    
+    const utterance = new SpeechSynthesisUtterance(texte);
+    utterance.lang = 'fr-CA'; // Accent québécois
+    utterance.rate = 1.0;     // Vitesse normale
+    
+    window.speechSynthesis.speak(utterance);
+}
+
+// Fonctions manuelles de secours / tests
+function simulerButMtl() {
+    scoreButsMTL++;
+    document.getElementById('scoreMTL').innerText = scoreButsMTL;
+    annoncerTexte(`Et le but ! Le score est maintenant de Montréal ${scoreButsMTL}, ${nomAdversaire} ${scoreButsAdversaire}.`);
+}
+
+function simulerButAdv() {
+    scoreButsAdversaire++;
+    document.getElementById('scoreADV').innerText = scoreButsAdversaire;
+    annoncerTexte(`But pour la Caroline. Le score est maintenant de Montréal ${scoreButsMTL}, ${nomAdversaire} ${scoreButsAdversaire}.`);
+}
+</script>
+
+</body>
+</html>
